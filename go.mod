@@ -101,11 +101,12 @@ require (
 	k8s.io/apiserver v0.0.0
 	k8s.io/client-go v0.0.0
 	k8s.io/cloud-provider v0.0.0
+	k8s.io/code-generator v0.0.0
 	k8s.io/component-base v0.0.0
 	k8s.io/cri-api v0.0.0
 	k8s.io/csi-translation-lib v0.0.0
 	k8s.io/klog v1.0.0
-	k8s.io/kube-openapi v0.0.0-20190718094010-3cf2ea392886 // indirect
+	k8s.io/kube-openapi v0.0.0-20190718094010-3cf2ea392886
 	k8s.io/kubernetes v1.15.3
 	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 )
