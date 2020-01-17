@@ -19,6 +19,8 @@ import (
 	"github.com/kubeedge/kubeedge/common/constants"
 	"github.com/kubeedge/viaduct/pkg/conn"
 	"github.com/kubeedge/viaduct/pkg/mux"
+	deviceconst "github.com/kubeedge/kubeedge/cloud/pkg/devicecontroller/constants"
+	edgeconst "github.com/kubeedge/kubeedge/cloud/pkg/edgecontroller/constants"
 )
 
 // ExitCode exit code
@@ -51,6 +53,7 @@ type MessageHandle struct {
 	Handlers          []HandleFunc
 	NodeLimit         int
 	KeepaliveChannel  map[string]chan struct{}
+	Retry int
 }
 
 type HandleFunc func(hi hubio.CloudHubIO, info *model.HubInfo, stop chan ExitCode)
@@ -68,12 +71,14 @@ func InitHandler(config *hubconfig.Configure, eventq *channelq.ChannelMessageQue
 			WriteTimeout:      config.WriteTimeout,
 			MessageQueue:      eventq,
 			NodeLimit:         config.NodeLimit,
+			Retry:			   3,
 		}
 
 		CloudhubHandler.KeepaliveChannel = make(map[string]chan struct{})
 		CloudhubHandler.Handlers = []HandleFunc{
 			CloudhubHandler.KeepaliveCheckLoop,
-			CloudhubHandler.MessageWriteLoop,
+			CloudhubHandler.EdgeMessageWriteLoop,
+			CloudhubHandler.DeviceMessageWriteLoop,
 		}
 
 		CloudhubHandler.initServerEntries()
@@ -107,6 +112,29 @@ func (mh *MessageHandle) HandleServer(container *mux.MessageContainer, writer mu
 		return
 	}
 
+	// hanle the reliablility ack from edge
+	if container.Message.Router.Operation == beehiveModel.ResponseOperation {
+		nodeID, _ := channelq.GetNodeID(*container.Message)
+		source, _ := channelq.GetSource(*container.Message)
+		messages, err := mh.MessageQueue.Consume(nodeID, source)
+
+		if err != nil {
+			// TODO: need to CancelNode when err occurs
+			klog.Errorf("failed to consume event for node %s, reason: %s", nodeID, err.Error())
+		}
+
+		curElement := messages.GetCurrentElement();
+		if curElement.GetID() != container.Message.GetParentID() {
+			// drop stale ack msg
+			klog.Infof("stale ack msg: %+v received", container.Message)
+			return
+		}
+
+		ackChan := mh.MessageQueue.GetAckChannel(nodeID, source)
+		ackChan <- *container.Message
+		return;
+	}
+
 	err := mh.PubToController(&model.HubInfo{ProjectID: projectID, NodeID: nodeID}, container.Message)
 	if err != nil {
 		// if err, we should stop node, write data to edgehub, stop nodify
@@ -114,7 +142,7 @@ func (mh *MessageHandle) HandleServer(container *mux.MessageContainer, writer mu
 	}
 }
 
-// OnRegister regist node on first connection
+// OnRegister register node on first connection
 func (mh *MessageHandle) OnRegister(connection conn.Connection) {
 	nodeID := connection.ConnectionState().Headers.Get("node_id")
 	projectID := connection.ConnectionState().Headers.Get("project_id")
@@ -244,6 +272,7 @@ func (mh *MessageHandle) EnrollNode(hi hubio.CloudHubIO, info *model.HubInfo) er
 		}
 		time.Sleep(time.Duration(1) * time.Second)
 	}
+
 	if err != nil {
 		klog.Errorf("fail to connect to event queue for node %s, reason %s", info.NodeID, err.Error())
 		notifyEventQueueError(hi, messageQueueDisconnect, info.NodeID)
@@ -305,54 +334,147 @@ func (mh *MessageHandle) GetWorkload() (float64, error) {
 	return mh.MessageQueue.Workload()
 }
 
+// EdgeMessageWriteLoop processes all edge write requests
+func (mh *MessageHandle) EdgeMessageWriteLoop(hi hubio.CloudHubIO, info *model.HubInfo, stop chan ExitCode) {
+	mh.MessageWriteLoop(hi, info, stop, model.SrcEdgeController)
+}
+// DeviceMessageWriteLoop processes all device write requests
+func (mh *MessageHandle) DeviceMessageWriteLoop(hi hubio.CloudHubIO, info *model.HubInfo, stop chan ExitCode) {
+	mh.MessageWriteLoop(hi, info, stop, model.SrcDeviceController)
+}
+
 // MessageWriteLoop processes all write requests
-func (mh *MessageHandle) MessageWriteLoop(hi hubio.CloudHubIO, info *model.HubInfo, stop chan ExitCode) {
-	messages, err := mh.MessageQueue.Consume(info)
+func (mh *MessageHandle) MessageWriteLoop(hi hubio.CloudHubIO, info *model.HubInfo, stop chan ExitCode, source string) {
+	messages, err := mh.MessageQueue.Consume(info.NodeID, source)
+
+	// wake up sending-to-edge task
+	mh.MessageQueue.Ack(info.NodeID, mh.newAckMessage(), source);
+
 	if err != nil {
 		klog.Errorf("failed to consume event for node %s, reason: %s", info.NodeID, err.Error())
 		stop <- messageQueueDisconnect
 		return
 	}
+
+	// initialize timer and retry count for handling timeouts and retries
+	timer := time.NewTimer(time.Second * 3)
+	timer.Stop();
+	curRetry := 0;
+
 	for {
-		msg, err := messages.Get()
-		if err != nil {
-			klog.Errorf("failed to consume event for node %s, reason: %s", info.NodeID, err.Error())
-			if err.Error() == MsgFormatError {
-				// error format message should not impact other message
-				messages.Ack()
-				continue
-			}
-			stop <- messageQueueDisconnect
-			return
-		}
+		select {
+		    case <-timer.C:
+		    	// retry
+				key, msg, _ := messages.Get()
+				if curRetry == 3 {
+					timer.Stop()
+					curRetry = 0
+					messages.Done(key)
+					mh.MessageQueue.Ack(info.NodeID, mh.newAckMessage(), source);
+				}
 
-		if model.IsNodeStopped(msg) {
-			klog.Infof("node %s is stopped, will disconnect", info.NodeID)
-			messages.Ack()
-			stop <- nodeStop
-			return
-		}
-		if !model.IsToEdge(msg) {
-			klog.Infof("skip only to cloud event for node %s, %s, content %s", info.NodeID, dumpMessageMetadata(msg), msg.Content)
-			messages.Ack()
-			continue
-		}
-		klog.Infof("event to send for node %s, %s, content %s", info.NodeID, dumpMessageMetadata(msg), msg.Content)
+				curRetry++;
+				mh.send(hi, info, msg);
+			case emsg := <-mh.MessageQueue.GetAckChannel(info.NodeID, source):
+				key, msg, err := messages.Get()
+				if err != nil {
+					klog.Errorf("failed to consume event for node %s, reason: %s", info.NodeID, err.Error())
+					if err.Error() == MsgFormatError {
+						// error format message should not impact other message
+						messages.Ack()
+						continue
+					}
+					stop <- messageQueueDisconnect
+					return
+				}
 
-		trimMessage(msg)
-		err = hi.SetWriteDeadline(time.Now().Add(time.Duration(mh.WriteTimeout) * time.Second))
-		if err != nil {
-			klog.Errorf("SetWriteDeadline error, %s", err.Error())
-			stop <- hubioWriteFail
-			return
+				// init msg will trigger to save the message resourceVersion to Key/Value-Store, and send the next message.
+				if mh.isInitAckMsg(&emsg) {
+					if model.IsNodeStopped(msg) {
+						klog.Infof("node %s is stopped, will disconnect", info.NodeID)
+						messages.Ack()
+						stop <- nodeStop
+						return
+					}
+
+					if skip, err := mh.PrepareMsg(hi, info, stop, msg, messages); skip {
+						if err!=nil{
+							return
+						}
+
+						continue;
+					}
+
+					mh.send(hi, info, msg);
+					// reset timer timeout
+					timer.Reset(time.Second * 3)
+					continue;
+				}
+
+				if emsg.GetParentID() == msg.GetID() {
+					// stop timer and reset the retry count
+					timer.Stop()
+					curRetry = 0
+					mh.saveSuccessPoint(msg)
+					messages.Done(key)
+					// wake up sending-to-edge task
+					mh.MessageQueue.Ack(info.NodeID, mh.newAckMessage(), source);
+				}
 		}
-		err = mh.hubIoWrite(hi, info.NodeID, msg)
-		if err != nil {
-			klog.Errorf("write error, connection for node %s will be closed, affected event %s, reason %s",
-				info.NodeID, dumpMessageMetadata(msg), err.Error())
-			stop <- hubioWriteFail
-			return
-		}
-		messages.Ack()
 	}
+}
+
+func (mh *MessageHandle) PrepareMsg(hi hubio.CloudHubIO, info *model.HubInfo, stop chan ExitCode, msg *beehiveModel.Message, messages channelq.MessageSet) (bool, error) {
+	if !model.IsToEdge(msg) {
+		klog.Infof("skip only to cloud event for node %s, %s, content %s", info.NodeID, dumpMessageMetadata(msg), msg.Content)
+		messages.Ack()
+		return true, nil;
+	}
+
+	klog.Infof("event to send for node %s, %s, content %s", info.NodeID, dumpMessageMetadata(msg), msg.Content)
+
+	trimMessage(msg)
+	err := hi.SetWriteDeadline(time.Now().Add(time.Duration(mh.WriteTimeout) * time.Second))
+	if err != nil {
+		klog.Errorf("SetWriteDeadline error, %s", err.Error())
+		stop <- hubioWriteFail
+		return true, err
+	}
+
+	return false, nil
+}
+
+func (mh *MessageHandle) send(hi hubio.CloudHubIO, info *model.HubInfo, msg *beehiveModel.Message) {
+	err := mh.hubIoWrite(hi, info.NodeID, msg)
+	if err != nil {
+		klog.Errorf("write error, connection for node %s will be closed, affected event %s, reason %s",
+			info.NodeID, dumpMessageMetadata(msg), err.Error())
+		return
+	}
+}
+
+func (mh *MessageHandle) saveSuccessPoint(msg *beehiveModel.Message) {
+	klog.Infof("saveSuccessPoint processing")
+	if msg.GetGroup() == edgeconst.GroupResource {
+
+	}
+
+	if msg.GetGroup() == deviceconst.GroupTwin {
+
+	}
+}
+
+func (mh *MessageHandle) isInitAckMsg(msg *beehiveModel.Message) bool {
+	if msg.GetOperation() == "initAck" {
+		return true;
+	}
+
+	return false;
+}
+
+// this method is called when one of the following occurs:
+// 1. MessageWriteLoop func starts for the first time
+// 2. MessageWriteLoop gets ack from edge and wants to get next msg in node queue
+func (mh *MessageHandle) newAckMessage() *beehiveModel.Message {
+	return beehiveModel.NewRawMessage().BuildRouter("","","","initAck")
 }
