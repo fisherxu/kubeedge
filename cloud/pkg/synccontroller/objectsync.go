@@ -37,7 +37,7 @@ func (sctl *SyncController) managePod(sync *v1alpha1.ObjectSync) {
 			return
 		}
 	}
-	sendEvents(err, nodeName, sync.Namespace, sync.Spec.ObjectName, model.ResourceTypePod,
+	sendEvents(err, nodeName, sync, model.ResourceTypePod,
 		pod.ResourceVersion, sync.Status.ObjectResourceVersion, pod)
 }
 
@@ -60,7 +60,7 @@ func (sctl *SyncController) manageConfigMap(sync *v1alpha1.ObjectSync) {
 			return
 		}
 	}
-	sendEvents(err, nodeName, sync.Namespace, sync.Spec.ObjectName, model.ResourceTypeConfigmap,
+	sendEvents(err, nodeName, sync, model.ResourceTypeConfigmap,
 		configmap.ResourceVersion, sync.Status.ObjectResourceVersion, configmap)
 }
 
@@ -83,7 +83,7 @@ func (sctl *SyncController) manageSecret(sync *v1alpha1.ObjectSync) {
 			return
 		}
 	}
-	sendEvents(err, nodeName, sync.Namespace, sync.Spec.ObjectName, model.ResourceTypeSecret,
+	sendEvents(err, nodeName, sync, model.ResourceTypeSecret,
 		secret.ResourceVersion, sync.Status.ObjectResourceVersion, secret)
 }
 
@@ -106,7 +106,7 @@ func (sctl *SyncController) manageService(sync *v1alpha1.ObjectSync) {
 			return
 		}
 	}
-	sendEvents(err, nodeName, sync.Namespace, sync.Spec.ObjectName, commonconst.ResourceTypeService,
+	sendEvents(err, nodeName, sync, commonconst.ResourceTypeService,
 		service.ResourceVersion, sync.Status.ObjectResourceVersion, service)
 }
 
@@ -129,7 +129,7 @@ func (sctl *SyncController) manageEndpoint(sync *v1alpha1.ObjectSync) {
 			return
 		}
 	}
-	sendEvents(err, nodeName, sync.Namespace, sync.Spec.ObjectName, commonconst.ResourceTypeEndpoints,
+	sendEvents(err, nodeName, sync, commonconst.ResourceTypeEndpoints,
 		endpoint.ResourceVersion, sync.Status.ObjectResourceVersion, endpoint)
 }
 
@@ -147,22 +147,26 @@ func (sctl *SyncController) manageDevice(sync *v1alpha1.ObjectSync) {
 	//}
 }
 
-func sendEvents(err error, nodeName, namespace, objectName, resourceType string,
-	objectResourceVersion, syncResourceVersion string,
-	obj interface{}) {
+func sendEvents(err error, nodeName string, sync *v1alpha1.ObjectSync, resourceType string,
+	objectResourceVersion, syncResourceVersion string, obj interface{}) {
 
 	if err != nil && apierrors.IsNotFound(err) {
 		//trigger the delete event
-		klog.Infof("%s: %s has been deleted in K8s, send the delete event to edge", resourceType, objectName)
-		msg := buildEdgeControllerMessage(nodeName, namespace, resourceType, objectName, model.DeleteOperation, obj)
+		klog.Infof("%s: %s has been deleted in K8s, send the delete event to edge", resourceType, sync.Spec.ObjectName)
+		msg := buildEdgeControllerMessage(nodeName, sync.Namespace, resourceType, sync.Spec.ObjectName, model.DeleteOperation, obj)
 		beehiveContext.Send(commonconst.DefaultContextSendModuleName, *msg)
+		return
+	}
+
+	if syncResourceVersion == "" {
+		klog.Errorf("The ObjectResourceVersion is empty in status of objectsync: %s", sync.Name)
 		return
 	}
 
 	if CompareResourceVersion(objectResourceVersion, syncResourceVersion) > 0 {
 		// trigger the update event
 		klog.Infof("The resourceVersion: %s of %s in K8s is greater than in edgenode: %s, send the update event", objectResourceVersion, resourceType, syncResourceVersion)
-		msg := buildEdgeControllerMessage(nodeName, namespace, resourceType, objectName, model.UpdateOperation, obj)
+		msg := buildEdgeControllerMessage(nodeName, sync.Namespace, resourceType, sync.Spec.ObjectName, model.UpdateOperation, obj)
 		beehiveContext.Send(commonconst.DefaultContextSendModuleName, *msg)
 	}
 }

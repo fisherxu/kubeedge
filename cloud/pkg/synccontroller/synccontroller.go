@@ -6,6 +6,8 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
@@ -89,8 +91,14 @@ func newSyncController(enable bool) *SyncController {
 	endpointInformer := kubeSharedInformers.Core().V1().Endpoints()
 	nodeInformer := kubeSharedInformers.Core().V1().Nodes()
 	deviceInformer := crdFactory.Devices().V1alpha1().Devices()
-	clusterObjectSyncInformer := crdFactory.Reliablesyncs().V1alpha1().ClusterObjectSyncs()
-	objectSyncInformer := crdFactory.Reliablesyncs().V1alpha1().ObjectSyncs()
+
+	// If status.objectResourceVersion in objectSync/clusterObjectSync is empty, skip it
+	reliableSyncFactory := syncinformer.New(crdFactory, v1.NamespaceAll, func(options *metav1.ListOptions) {
+		options.FieldSelector = fields.OneTermNotEqualSelector("status.objectResourceVersion", "").String()
+	})
+
+	clusterObjectSyncInformer := reliableSyncFactory.ClusterObjectSyncs()
+	objectSyncInformer := reliableSyncFactory.ObjectSyncs()
 
 	sctl := &SyncController{
 		enable: enable,
