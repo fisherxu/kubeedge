@@ -64,7 +64,10 @@ func (a *cloudHub) Start() {
 	// start dispatch message from the cloud to edge node
 	go messageq.DispatchMessage()
 
+	//create server's certificate and key and store them to secret and local
+	//TODO:检查本地是否有证书,再检查secret(etcd)
 	httpserver.SignCerts()
+	httpserver.GenerateToken()
 
 	// HttpServer mainly used to issue certificates for the edge
 	httpserver.StartHttpServer()
