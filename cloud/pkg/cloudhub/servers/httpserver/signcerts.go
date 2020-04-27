@@ -17,11 +17,11 @@ limitations under the License.
 package httpserver
 
 import (
-	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
+	hubconfig "github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/config"
 	"strings"
 	"time"
 
@@ -29,25 +29,21 @@ import (
 	certutil "k8s.io/client-go/util/cert"
 )
 
-//create server's certificate and key and store them to secret and local
-func SignCerts() {
+
+//create server's certificate and key
+func SignCerts()([]byte,[]byte) {
 	cfgs := &certutil.Config{
 		CommonName:   "kubeedge",
-		Organization: []string{"HUAWEI"},
-		Usages:       nil,
-		AltNames:nil,
+		Organization: []string{"HuaWei"},
+		Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		AltNames:     nil,
 	}
-	//new server's certificate
+	//new server's certificate from ca
 	certDER,keyDER,err:=NewCloudCoreCertDERandKey(cfgs)
-	//save it to secret
-	CreateCloudCoreSecret(certDER,keyDER)
-	cert, err :=x509.ParseCertificate(certDER)
 	if err!=nil{
 		fmt.Printf("%v",err)
 	}
-	key, _ :=x509.ParsePKCS1PrivateKey(keyDER)
-	//write to file
-	WriteCertAndKey("/etc/kubeedge/certs/" , "cloudcore" ,cert,key)
+	return certDER,keyDER
 }
 
 
@@ -102,14 +98,13 @@ func refreshToken() string {
 
 // getCahash get ca-hash
 func getCahash() string {
-	caDER, _, _ := generateCaIfnotExist()
+	caDER:= hubconfig.Config.Ca
 	digest:=sha256.Sum256(caDER)
 	return hex.EncodeToString(digest[:])
 }
 
-//getCakey get Cakey to encrypt token
+//getCaKey get caKey to encrypt token
 func getCaKey() []byte {
-	_,_,key:= generateCaIfnotExist()
-	keyPEM := x509.MarshalPKCS1PrivateKey(key.(*rsa.PrivateKey))
-	return keyPEM
+	caKey:=hubconfig.Config.CaKey
+	return caKey
 }

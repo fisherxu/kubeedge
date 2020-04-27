@@ -15,32 +15,31 @@ import (
 const (
 	NamespaceSystem string = "kubeedge"
 
-	TokenSecretName string= "tokenSecret"
-	CaSecretName string= "caSecret"
-	CloudCoreSecretName string= "cloudCoreSecret"
-	CaDataName string= "caData"
-	CaKeyDataName string= "caKeyData"
-	CloudCoreDataName string= "cloudCoreData"
-	CloudCoreKeyDataName string= "cloudCoreKeyData"
-	tokenDataName string= "cloudCoreData"
+	TokenSecretName      string = "tokenSecret"
+	CaSecretName         string = "caSecret"
+	CloudCoreSecretName  string = "cloudCoreSecret"
+	CaDataName           string = "caData"
+	CaKeyDataName        string = "caKeyData"
+	CloudCoreDataName    string = "cloudCoreData"
+	CloudCoreKeyDataName string = "cloudCoreKeyData"
+	tokenDataName        string = "cloudCoreData"
 )
 
-
-func GetSecret(secretName string) (*v1.Secret, error) {
+func GetSecret(secretName string, ns string) (*v1.Secret, error) {
 	cli, err := utils.KubeClient()
-	if err!=nil{
-		fmt.Printf("%v",err)
+	if err != nil {
+		fmt.Printf("%v", err)
 	}
-	return cli.CoreV1().Secrets(NamespaceSystem).Get(secretName, metav1.GetOptions{})
+	return cli.CoreV1().Secrets(ns).Get(secretName, metav1.GetOptions{})
 }
 
 // CreateSecret creates a Secret
-func CreateSecret(secret *v1.Secret) error {
+func CreateSecret(secret *v1.Secret, ns string) error {
 	cli, err := utils.KubeClient()
-	if err!=nil{
-		fmt.Printf("%v",err)
+	if err != nil {
+		fmt.Printf("%v", err)
 	}
-	if _, err := cli.CoreV1().Secrets(NamespaceSystem).Create(secret); err != nil {
+	if _, err := cli.CoreV1().Secrets(ns).Create(secret); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return errors.Wrap(err, "unable to create secret")
 		}
@@ -50,53 +49,50 @@ func CreateSecret(secret *v1.Secret) error {
 
 func CreateTokenSecret(caHashAndToken []byte) {
 	token := &v1.Secret{
-		TypeMeta:   metav1.TypeMeta{Kind:"Secret", APIVersion:"v1"},
+		TypeMeta: metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: TokenSecretName,
+			Name:      TokenSecretName,
 			Namespace: NamespaceSystem,
-
 		},
-		Data:       map[string][]byte{
+		Data: map[string][]byte{
 			tokenDataName: caHashAndToken,
 		},
 		StringData: map[string]string{},
 		Type:       "Opaque",
 	}
-	CreateSecret(token)
+	CreateSecret(token, NamespaceSystem)
 }
 
-func CreateCaSecret(certDER,key []byte) {
+func CreateCaSecret(certDER, key []byte) {
 	caCert := &v1.Secret{
-		TypeMeta:   metav1.TypeMeta{Kind:"Secret", APIVersion:"v1"},
+		TypeMeta: metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: CaSecretName,
+			Name:      CaSecretName,
 			Namespace: NamespaceSystem,
-
 		},
-		Data:       map[string][]byte{
-			CaDataName: certDER,
-			CaKeyDataName:  key,
+		Data: map[string][]byte{
+			CaDataName:    certDER,
+			CaKeyDataName: key,
 		},
 		StringData: map[string]string{},
 		Type:       "Opaque",
 	}
-	CreateSecret(caCert)
+	CreateSecret(caCert, NamespaceSystem)
 }
 
-func CreateCloudCoreSecret(certDER,key []byte){
+func CreateCloudCoreSecret(certDER, key []byte) {
 	cloudCoreCert := &v1.Secret{
-		TypeMeta:   metav1.TypeMeta{Kind:"Secret", APIVersion:"v1"},
+		TypeMeta: metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: CloudCoreSecretName,
+			Name:      CloudCoreSecretName,
 			Namespace: NamespaceSystem,
-
 		},
-		Data:       map[string][]byte{
-			CloudCoreDataName: certDER,
-			CloudCoreKeyDataName:  key,
+		Data: map[string][]byte{
+			CloudCoreDataName:    certDER,
+			CloudCoreKeyDataName: key,
 		},
 		StringData: map[string]string{},
 		Type:       "Opaque",
 	}
-	CreateSecret(cloudCoreCert)
+	CreateSecret(cloudCoreCert, NamespaceSystem)
 }
