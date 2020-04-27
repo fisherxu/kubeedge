@@ -16,13 +16,13 @@ const (
 	NamespaceSystem string = "kubeedge"
 
 	TokenSecretName      string = "tokenSecret"
+	TokenDataName        string = "tokenData"
 	CaSecretName         string = "caSecret"
 	CloudCoreSecretName  string = "cloudCoreSecret"
 	CaDataName           string = "caData"
 	CaKeyDataName        string = "caKeyData"
 	CloudCoreDataName    string = "cloudCoreData"
 	CloudCoreKeyDataName string = "cloudCoreKeyData"
-	tokenDataName        string = "cloudCoreData"
 )
 
 func GetSecret(secretName string, ns string) (*v1.Secret, error) {
@@ -55,7 +55,7 @@ func CreateTokenSecret(caHashAndToken []byte) {
 			Namespace: NamespaceSystem,
 		},
 		Data: map[string][]byte{
-			tokenDataName: caHashAndToken,
+			TokenDataName: caHashAndToken,
 		},
 		StringData: map[string]string{},
 		Type:       "Opaque",
