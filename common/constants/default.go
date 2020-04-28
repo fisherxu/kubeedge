@@ -9,8 +9,9 @@ import (
 const (
 	DefaultConfigDir = "/etc/kubeedge/config/"
 	DefaultCAFile    = "/etc/kubeedge/ca/rootCA.crt"
-	DefaultCertFile  = "/etc/kubeedge/certs/edge.crt"
-	DefaultKeyFile   = "/etc/kubeedge/certs/edge.key"
+	DefaultCAKeyFile = "/etc/kubeedge/ca/rootCA.key"
+	DefaultCertFile  = "/etc/kubeedge/certs/server.crt"
+	DefaultKeyFile   = "/etc/kubeedge/certs/server.key"
 )
 
 const (

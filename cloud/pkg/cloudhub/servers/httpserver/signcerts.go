@@ -17,17 +17,37 @@ limitations under the License.
 package httpserver
 
 import (
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/hex"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	certutil "k8s.io/client-go/util/cert"
+
+	hubconfig "github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/config"
 )
 
-func SignCerts() {
+// SignCerts creates server's certificate and key
+func SignCerts() ([]byte, []byte) {
+	cfg := &certutil.Config{
+		CommonName:   "kubeedge",
+		Organization: []string{"HuaWei"},
+		Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		AltNames:     certutil.AltNames{},
+	}
 
+	certDER, keyDER, err := NewCloudCoreCertDERandKey(cfg)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+
+	return certDER, keyDER
 }
 
-func generateToken() {
+func GenerateToken() {
 	expiresAt := time.Now().Add(time.Hour * 24).Unix()
 
 	token := jwt.New(jwt.SigningMethodHS256)
@@ -36,9 +56,19 @@ func generateToken() {
 		ExpiresAt: expiresAt,
 	}
 
-	tokenString, _ := token.SignedString([]byte("secret"))
+	keyPEM := getCaKey()
+	tokenString, err := token.SignedString(keyPEM)
 
-	fmt.Println(tokenString)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+	caHash := getCaHash()
+	// combine caHash and tokenString into caHashAndToken
+	caHashAndToken := strings.Join([]string{caHash, tokenString}, " ")
+	// save caHashAndToken to secret
+	CreateTokenSecret([]byte(caHashAndToken))
+
+	fmt.Println(caHashAndToken)
 
 	t := time.NewTicker(time.Hour * 12)
 	go func() {
@@ -56,6 +86,23 @@ func refreshToken() string {
 	expirationTime := time.Now().Add(5 * time.Minute)
 	claims.ExpiresAt = expirationTime.Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, _ := token.SignedString([]byte("secret"))
-	return tokenString
+	keyPEM := getCaKey()
+	tokenString, _ := token.SignedString(keyPEM)
+	caHash := getCaHash()
+	//put caHash in token
+	caHashAndToken := strings.Join([]string{caHash, tokenString}, " ")
+	return caHashAndToken
+}
+
+// getCaHash gets ca-hash
+func getCaHash() string {
+	caDER := hubconfig.Config.Ca
+	digest := sha256.Sum256(caDER)
+	return hex.EncodeToString(digest[:])
+}
+
+// getCaKey gets caKey to encrypt token
+func getCaKey() []byte {
+	caKey := hubconfig.Config.CaKey
+	return caKey
 }

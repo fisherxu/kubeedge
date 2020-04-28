@@ -45,6 +45,7 @@ func NewDefaultCloudCoreConfig() *CloudCoreConfig {
 				KeepaliveInterval: 30,
 				NodeLimit:         10,
 				TLSCAFile:         constants.DefaultCAFile,
+				TLSCAKeyFile:      constants.DefaultCAKeyFile,
 				TLSCertFile:       constants.DefaultCertFile,
 				TLSPrivateKeyFile: constants.DefaultKeyFile,
 				WriteTimeout:      30,
@@ -61,6 +62,11 @@ func NewDefaultCloudCoreConfig() *CloudCoreConfig {
 				WebSocket: &CloudHubWebSocket{
 					Enable:  true,
 					Port:    10000,
+					Address: "0.0.0.0",
+				},
+				Https: &CloudHubHttps{
+					Enable:  true,
+					Port:    10002,
 					Address: "0.0.0.0",
 				},
 			},
@@ -144,6 +150,7 @@ func NewMinCloudCoreConfig() *CloudCoreConfig {
 			CloudHub: &CloudHub{
 				NodeLimit:         10,
 				TLSCAFile:         constants.DefaultCAFile,
+				TLSCAKeyFile:      constants.DefaultCAKeyFile,
 				TLSCertFile:       constants.DefaultCertFile,
 				TLSPrivateKeyFile: constants.DefaultKeyFile,
 				UnixSocket: &CloudHubUnixSocket{
@@ -153,6 +160,11 @@ func NewMinCloudCoreConfig() *CloudCoreConfig {
 				WebSocket: &CloudHubWebSocket{
 					Enable:  true,
 					Port:    10000,
+					Address: "0.0.0.0",
+				},
+				Https: &CloudHubHttps{
+					Enable:  true,
+					Port:    10002,
 					Address: "0.0.0.0",
 				},
 			},

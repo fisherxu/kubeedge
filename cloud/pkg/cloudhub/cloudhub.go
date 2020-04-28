@@ -64,7 +64,12 @@ func (a *cloudHub) Start() {
 	// start dispatch message from the cloud to edge node
 	go messageq.DispatchMessage()
 
-	httpserver.SignCerts()
+	// check whether the certificates exist in the local directory,
+	// and then check whether certificates exist in the secret, generate if they don't exist
+	httpserver.PrepareAllCerts()
+
+	// generate Token
+	httpserver.GenerateToken()
 
 	// HttpServer mainly used to issue certificates for the edge
 	httpserver.StartHttpServer()
