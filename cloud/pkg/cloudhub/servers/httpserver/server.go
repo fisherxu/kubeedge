@@ -212,7 +212,7 @@ func PrepareAllCerts() {
 	// Check whether the CloudCore certificates exist in the local directory
 	if !(utilvalidation.FileIsExist(constants.DefaultKeyFile) && utilvalidation.FileIsExist(constants.DefaultCertFile)) {
 		klog.Errorf("TLSCertFile and TLSPrivateKeyFile don't exist")
-		fmt.Println("TLSCertFile and TLSPrivateKeyFile don't not exist")
+		fmt.Println("TLSCertFile and TLSPrivateKeyFile don't git reset --soft HEAD^exist")
 		// Check whether the CloudCore certificates exist in the secret
 		secretHasCert := CheckCertExistsFromSecret()
 		if !secretHasCert {
