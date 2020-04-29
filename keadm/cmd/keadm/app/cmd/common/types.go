@@ -35,6 +35,13 @@ type JoinOptions struct {
 	EdgeNodeName    string
 	InterfaceName   string
 	RuntimeType     string
+	Token           string
+	HttpServer      string
+}
+
+//JoinOptions has the kubeedge cloud init information filled by CLI
+type GetokenOptions struct {
+	Kubeconfig string
 }
 
 //InstallState enum set used for verifying a tool version is installed in host
