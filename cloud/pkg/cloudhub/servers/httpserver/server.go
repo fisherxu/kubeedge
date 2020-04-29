@@ -18,7 +18,8 @@ package httpserver
 
 import (
 	"crypto"
-	"crypto/rsa"
+	"crypto/ecdsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
@@ -32,18 +33,30 @@ import (
 	"k8s.io/klog"
 
 	hubconfig "github.com/kubeedge/kubeedge/cloud/pkg/cloudhub/config"
-	"github.com/kubeedge/kubeedge/common/constants"
-	utilvalidation "github.com/kubeedge/kubeedge/pkg/util/validation"
 )
 
 // StartHttpServer starts the http service
 func StartHttpServer() {
 	router := mux.NewRouter()
 	router.HandleFunc("/edge.crt", edgeCoreClientCert).Methods("GET")
-	//router.HandleFunc("/client.crt", edgeCoreClientCert).Methods("GET")
 	router.HandleFunc("/ca.crt", getCA).Methods("GET")
+
 	addr := fmt.Sprintf("%s:%d", hubconfig.Config.Https.Address, hubconfig.Config.Https.Port)
-	klog.Fatal(http.ListenAndServeTLS(addr, "", "", router))
+
+	cert, err := tls.X509KeyPair(hubconfig.Config.Cert, hubconfig.Config.Key)
+	if err != nil {
+		klog.Fatal(err)
+	}
+
+	server := &http.Server{
+		Addr:    addr,
+		Handler: router,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			ClientAuth:   tls.NoClientCert,
+		},
+	}
+	klog.Fatal(server.ListenAndServeTLS("", ""))
 }
 
 // getCA returns the caCertDER
@@ -136,126 +149,101 @@ func signCerts(subInfo pkix.Name, pbKey crypto.PublicKey) ([]byte, error) {
 }
 
 func CheckCaExistsFromSecret() bool {
-	if _, err := GetSecret(CaSecretName, NamespaceSystem); err == nil {
-		return true
-	} else {
+	if _, err := GetSecret(CaSecretName, NamespaceSystem); err != nil {
 		return false
 	}
+	return true
+
 }
 
 func CheckCertExistsFromSecret() bool {
-	if _, err := GetSecret(CloudCoreSecretName, NamespaceSystem); err == nil {
-		return true
-	} else {
+	if _, err := GetSecret(CloudCoreSecretName, NamespaceSystem); err != nil {
 		return false
 	}
+	return true
 }
 
 // PrepareAllCerts check whether the certificates exist in the local directory,
 // and then check whether certificates exist in the secret, generate if they don't exist
-func PrepareAllCerts() {
+func PrepareAllCerts() error {
 	// Check whether the ca exists in the local directory
-	if !(utilvalidation.FileIsExist(constants.DefaultCAFile) && utilvalidation.FileIsExist(constants.DefaultCAKeyFile)) {
+	if hubconfig.Config.Ca == nil && hubconfig.Config.CaKey == nil {
+		klog.Infof("Ca and CaKey don't exist, and will be signed by cloudcore")
 		// Check whether the ca exists in the secret
 		secretHasCA := CheckCaExistsFromSecret()
 		if !secretHasCA {
 			caDER, caKey, err := NewCertificateAuthorityDer()
 			if err != nil {
 				klog.Errorf("failed to create Certificate Authority, error: %v", err)
-				fmt.Errorf("failed to create Certificate Authority, error: %v", err)
+				return err
 			}
 
-			caCert, err := x509.ParseCertificate(caDER)
+			caKeyDER, _ := x509.MarshalECPrivateKey(caKey.(*ecdsa.PrivateKey))
+
+			err = CreateCaSecret(caDER, caKeyDER)
 			if err != nil {
-				klog.Errorf("failed to ParseCertificate, error: %v", err)
-				fmt.Errorf("failed to ParseCertificate, error: %v", err)
+				klog.Errorf("failed to create ca to secrets, error: %v", err)
+				return err
 			}
-
-			WriteCertAndKey("/etc/kubeedge/ca/", "rootCA", caCert, caKey)
-
-			caKeyDER := x509.MarshalPKCS1PrivateKey(caKey.(*rsa.PrivateKey))
-
-			CreateCaSecret(caDER, caKeyDER)
 
 			UpdateConfig(caDER, caKeyDER, []byte(""), []byte(""))
-
 		} else {
 			s, err := GetSecret(CaSecretName, NamespaceSystem)
 			if err != nil {
 				klog.Errorf("failed to get CaSecret, error: %v", err)
-				fmt.Errorf("failed to get CaSecret, error: %v", err)
+				return err
 			}
 			caDER := s.Data[CaDataName]
 			caKeyDER := s.Data[CaKeyDataName]
-			caCert, err := x509.ParseCertificate(caDER)
-			if err != nil {
-				klog.Errorf("failed to ParseCertificate, error: %v", err)
-				fmt.Errorf("failed to ParseCertificate, error: %v", err)
-			}
-			caKey, err := x509.ParsePKCS1PrivateKey(caKeyDER)
-			if err != nil {
-				klog.Errorf("failed to ParsePKCS1PrivateKey, error: %v", err)
-				fmt.Errorf("failed to ParsePKCS1PrivateKey, error: %v", err)
-			}
 
 			UpdateConfig(caDER, caKeyDER, []byte(""), []byte(""))
-
-			WriteCertAndKey("/etc/kubeedge/ca/", "rootCA", caCert, caKey)
 		}
 	} else {
 		// HubConfig has been initialized
 		ca := hubconfig.Config.Ca
 		caKey := hubconfig.Config.CaKey
-		CreateCaSecret(ca, caKey)
+		err := CreateCaSecret(ca, caKey)
+		if err != nil {
+			klog.Errorf("failed to create ca to secrets, error: %v", err)
+			return err
+		}
 	}
 
 	// Check whether the CloudCore certificates exist in the local directory
-	if !(utilvalidation.FileIsExist(constants.DefaultKeyFile) && utilvalidation.FileIsExist(constants.DefaultCertFile)) {
-		klog.Errorf("TLSCertFile and TLSPrivateKeyFile don't exist")
-		fmt.Println("TLSCertFile and TLSPrivateKeyFile don't git reset --soft HEAD^exist")
+	if hubconfig.Config.Key == nil && hubconfig.Config.Cert == nil {
+		klog.Infof("TLSCertFile and TLSPrivateKeyFile don't exist, and will be signed by cloudcore")
 		// Check whether the CloudCore certificates exist in the secret
 		secretHasCert := CheckCertExistsFromSecret()
 		if !secretHasCert {
 			certDER, keyDER := SignCerts()
-			cert, key, err := ParseCertDerToCertificate(certDER, keyDER)
+
+			err := CreateCloudCoreSecret(certDER, keyDER)
 			if err != nil {
-				klog.Errorf("failed to ParseCertDerToCertificate, error: %v", err)
-				fmt.Errorf("failed to ParseCertDerToCertificate, error: %v", err)
+				klog.Errorf("failed to create cloudcore cert to secrets, error: %v", err)
+				return err
 			}
-
-			CreateCloudCoreSecret(certDER, keyDER)
-
-			WriteCertAndKey("/etc/kubeedge/certs/", "server", cert, key)
 
 			UpdateConfig([]byte(""), []byte(""), certDER, keyDER)
 		} else {
 			s, err := GetSecret(CloudCoreSecretName, NamespaceSystem)
 			if err != nil {
 				klog.Errorf("failed to get cloudcore secret, error: %v", err)
-				fmt.Errorf("failed to get cloudcore secret error: %v", err)
+				return err
 			}
-			certDER := s.Data[CloudCoreDataName]
+			certDER := s.Data[CloudCoreCertName]
 			keyDER := s.Data[CloudCoreKeyDataName]
 
-			cert, err := x509.ParseCertificate(certDER)
-			if err != nil {
-				klog.Errorf("failed to ParseCertificate, error: %v", err)
-				fmt.Errorf("failed to ParseCertificate, error: %v", err)
-			}
-			key, err := x509.ParsePKCS1PrivateKey(keyDER)
-			if err != nil {
-				klog.Errorf("failed to ParsePKCS1PrivateKey, error: %v", err)
-				fmt.Errorf("failed to ParsePKCS1PrivateKey, error: %v", err)
-			}
-
 			UpdateConfig([]byte(""), []byte(""), certDER, keyDER)
-
-			WriteCertAndKey("/etc/kubeedge/certs/", "server", cert, key)
 		}
 	} else {
 		// HubConfig has been initialized
 		cert := hubconfig.Config.Cert
 		key := hubconfig.Config.Key
-		CreateCaSecret(cert, key)
+		err := CreateCaSecret(cert, key)
+		if err != nil {
+			klog.Errorf("failed to create cloudcore cert to secrets, error: %v", err)
+			return err
+		}
 	}
+	return nil
 }
