@@ -155,7 +155,7 @@ func CheckCertExistsFromSecret() bool {
 // and then check whether certificates exist in the secret, generate if they don't exist
 func PrepareAllCerts() {
 	// Check whether the ca exists in the local directory
-	if !(utilvalidation.FileIsExist(constants.DefaultCAFile) && utilvalidation.FileIsExist(constants.DefaultCAKeyFile)) {
+	if !(utilvalidation.FileIsExist(hubconfig.Config.CloudHub.TLSCAFile) && utilvalidation.FileIsExist(hubconfig.Config.CloudHub.TLSCAKeyFile)) {
 		// Check whether the ca exists in the secret
 		secretHasCA := CheckCaExistsFromSecret()
 		if !secretHasCA {
@@ -210,7 +210,7 @@ func PrepareAllCerts() {
 	}
 
 	// Check whether the CloudCore certificates exist in the local directory
-	if !(utilvalidation.FileIsExist(constants.DefaultKeyFile) && utilvalidation.FileIsExist(constants.DefaultCertFile)) {
+	if !(utilvalidation.FileIsExist(hubconfig.Config.CloudHub.TLSCertFile) && utilvalidation.FileIsExist(hubconfig.Config.CloudHub.TLSPrivateKeyFile)) {
 		klog.Errorf("TLSCertFile and TLSPrivateKeyFile don't exist")
 		fmt.Println("TLSCertFile and TLSPrivateKeyFile don't git reset --soft HEAD^exist")
 		// Check whether the CloudCore certificates exist in the secret
