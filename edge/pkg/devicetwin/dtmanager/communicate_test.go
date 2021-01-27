@@ -38,59 +38,55 @@ func TestStartAction(t *testing.T) {
 	dtContextStateConnected.State = dtcommon.Connected
 	receiveChanActionPresent := make(chan interface{}, 1)
 
+	cw := CommWorker{
+		Worker: Worker{
+			ReceiverChan: receiveChanActionPresent,
+			DTContexts:   dtContextStateConnected,
+		},
+	}
+	go cw.Start()
+
 	const delay = 10 * time.Millisecond
 	const maxRetries = 5
 
-	receiveChanActionPresent <- &dttype.DTMessage{
-		Action:   dtcommon.SendToCloud,
-		Identity: "identity",
-		Msg: &model.Message{
-			Header: model.MessageHeader{
-				ID: "message",
-			},
-			Content: "msg",
-		},
-	}
-
-	receiveChanActionNotPresent := make(chan interface{}, 1)
-	receiveChanActionNotPresent <- &dttype.DTMessage{
-		Action:   "action",
-		Identity: "identity",
-		Msg: &model.Message{
-			Content: "msg",
-		},
-	}
 	tests := []struct {
-		name   string
-		Worker Worker
+		name      string
+		dtMessage dttype.DTMessage
 	}{
 		{
 			name: "StartTest-ActionPresentInActionCallback",
-			Worker: Worker{
-				ReceiverChan: receiveChanActionPresent,
-				DTContexts:   dtContextStateConnected,
+			dtMessage: dttype.DTMessage{
+				Action:   dtcommon.SendToCloud,
+				Identity: "identity",
+				Msg: &model.Message{
+					Header: model.MessageHeader{
+						ID: "message",
+					},
+					Content: "msg",
+				},
 			},
 		},
 		{
 			name: "StartTest-ActionNotPresentInActionCallback",
-			Worker: Worker{
-				ReceiverChan: receiveChanActionNotPresent,
-				DTContexts:   dtContextStateConnected,
+			dtMessage: dttype.DTMessage{
+				Action:   "action",
+				Identity: "identity",
+				Msg: &model.Message{
+					Content: "msg",
+				},
 			},
 		},
 	}
+
 	for _, test := range tests {
 		retry := 0
 		t.Run(test.name, func(t *testing.T) {
-			cw := CommWorker{
-				Worker: test.Worker,
-			}
-			go cw.Start()
-			if test.Worker.ReceiverChan == receiveChanActionPresent {
+			if test.name == "StartTest-ActionPresentInActionCallback" {
+				cw.ReceiverChan <- test.dtMessage
 				for retry < maxRetries {
 					time.Sleep(delay)
 					retry++
-					_, exist := test.Worker.DTContexts.ConfirmMap.Load("message")
+					_, exist := cw.Worker.DTContexts.ConfirmMap.Load("message")
 					if exist {
 						break
 					}
@@ -113,44 +109,40 @@ func TestStartHeartBeat(t *testing.T) {
 	heartChanStop <- "stop"
 	heartChanPing <- "ping"
 
+	cw := CommWorker{
+		Worker: Worker{
+			HeartBeatChan: heartChanPing,
+			DTContexts:    dtContexts,
+		},
+		Group: "group",
+	}
+	go cw.Start()
+
 	const delay = 10 * time.Millisecond
 	const maxRetries = 5
 
 	tests := []struct {
 		name   string
-		Worker Worker
-		Group  string
+		signal string
 	}{
 		{
-			name: "StartTest-PingInHeartBeatChannel",
-			Worker: Worker{
-				HeartBeatChan: heartChanPing,
-				DTContexts:    dtContexts,
-			},
-			Group: "group",
+			name:   "StartTest-PingInHeartBeatChannel",
+			signal: "ping",
 		},
 		{
-			name: "StartTest-StopInHeartBeatChannel",
-			Worker: Worker{
-				HeartBeatChan: heartChanStop,
-				DTContexts:    dtContexts,
-			},
-			Group: "group",
+			name:   "StartTest-StopInHeartBeatChannel",
+			signal: "stop",
 		},
 	}
 	for _, test := range tests {
 		retry := 0
 		t.Run(test.name, func(t *testing.T) {
-			cw := CommWorker{
-				Worker: test.Worker,
-				Group:  test.Group,
-			}
-			go cw.Start()
-			if test.Worker.HeartBeatChan == heartChanPing {
+			if test.name == "StartTest-PingInHeartBeatChannel" {
+				cw.HeartBeatChan <- test.signal
 				for retry < maxRetries {
 					time.Sleep(delay)
 					retry++
-					_, exist := test.Worker.DTContexts.ModulesHealth.Load("group")
+					_, exist := cw.Worker.DTContexts.ModulesHealth.Load("group")
 					if exist {
 						break
 					}
