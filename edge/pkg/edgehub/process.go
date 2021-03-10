@@ -55,11 +55,7 @@ func (eh *EdgeHub) deleteKeepChannel(msgID string) {
 }
 
 func (eh *EdgeHub) isSyncResponse(msgID string) bool {
-	eh.keeperLock.RLock()
-	defer eh.keeperLock.RUnlock()
-
-	_, exist := eh.syncKeeper[msgID]
-	return exist
+	return msgID != ""
 }
 
 func (eh *EdgeHub) sendToKeepChannel(message model.Message) error {
@@ -98,11 +94,13 @@ func (eh *EdgeHub) dispatch(message model.Message) error {
 	}
 
 	isResponse := eh.isSyncResponse(message.GetParentID())
-	if !isResponse {
-		beehiveContext.SendToGroup(md, message)
+	if isResponse {
+		beehiveContext.SendResp(message)
 		return nil
 	}
-	return eh.sendToKeepChannel(message)
+
+	beehiveContext.SendToGroup(md, message)
+	return nil
 }
 
 func (eh *EdgeHub) routeToEdge() {
@@ -136,24 +134,6 @@ func (eh *EdgeHub) sendToCloud(message model.Message) error {
 	if err != nil {
 		klog.Errorf("failed to send message: %v", err)
 		return fmt.Errorf("failed to send message, error: %v", err)
-	}
-
-	syncKeep := func(message model.Message) {
-		tempChannel := eh.addKeepChannel(message.GetID())
-		sendTimer := time.NewTimer(time.Duration(config.Config.Heartbeat) * time.Second)
-		select {
-		case response := <-tempChannel:
-			sendTimer.Stop()
-			beehiveContext.SendResp(response)
-			eh.deleteKeepChannel(response.GetParentID())
-		case <-sendTimer.C:
-			klog.Warningf("timeout to receive response for message: %+v", message)
-			eh.deleteKeepChannel(message.GetID())
-		}
-	}
-
-	if message.IsSync() {
-		go syncKeep(message)
 	}
 
 	return nil
