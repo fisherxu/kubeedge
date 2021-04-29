@@ -24,7 +24,7 @@ require (
 	github.com/goburrow/serial v0.1.0 // indirect
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.2
-	github.com/google/cadvisor v0.37.0
+	github.com/google/cadvisor v0.37.5
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.3
 	github.com/gorilla/websocket v1.4.0
@@ -51,26 +51,26 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.0
 	github.com/vishvananda/netlink v1.1.0
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381
+	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 	google.golang.org/grpc v1.27.0
 	gopkg.in/yaml.v2 v2.2.8
-	k8s.io/api v0.19.3
-	k8s.io/apiextensions-apiserver v0.19.3
-	k8s.io/apimachinery v0.19.3
-	k8s.io/apiserver v0.19.3
-	k8s.io/cli-runtime v0.19.1
-	k8s.io/client-go v0.19.3
-	k8s.io/cloud-provider v0.19.3
-	k8s.io/cluster-bootstrap v0.19.3 // indirect
-	k8s.io/code-generator v0.19.3
-	k8s.io/component-base v0.19.3
-	k8s.io/cri-api v0.19.3
-	k8s.io/csi-translation-lib v0.19.3
+	k8s.io/api v0.19.10
+	k8s.io/apiextensions-apiserver v0.19.10
+	k8s.io/apimachinery v0.19.10
+	k8s.io/apiserver v0.19.10
+	k8s.io/cli-runtime v0.19.10
+	k8s.io/client-go v0.19.10
+	k8s.io/cloud-provider v0.19.10
+	k8s.io/cluster-bootstrap v0.19.10 // indirect
+	k8s.io/code-generator v0.19.10
+	k8s.io/component-base v0.19.10
+	k8s.io/cri-api v0.19.10
+	k8s.io/csi-translation-lib v0.19.10
 	k8s.io/klog/v2 v2.2.0
 	k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6
-	k8s.io/kube-scheduler v0.19.3 // indirect
-	k8s.io/kubelet v0.19.3
-	k8s.io/kubernetes v1.19.3
+	k8s.io/kube-scheduler v0.19.10 // indirect
+	k8s.io/kubelet v0.19.10
+	k8s.io/kubernetes v1.19.10
 	k8s.io/utils v0.0.0-20200729134348-d5654de09c73
 	sigs.k8s.io/yaml v1.2.0
 )
@@ -104,7 +104,7 @@ replace (
 	k8s.io/kube-openapi v0.0.0 => k8s.io/kube-openapi v0.0.0-20190718094010-3cf2ea392886 // indirect
 	k8s.io/kube-proxy v0.0.0 => k8s.io/kube-proxy v0.0.0-20190718185641-5233cb7cb41e
 	k8s.io/kube-scheduler v0.0.0 => k8s.io/kube-scheduler v0.0.0-20190718185913-d5429d807831
-	k8s.io/kubectl => k8s.io/kubectl v0.19.1
+	k8s.io/kubectl => k8s.io/kubectl v0.19.10
 	k8s.io/kubelet v0.0.0 => k8s.io/kubelet v0.0.0-20190718185757-9b45f80d5747
 	k8s.io/legacy-cloud-providers v0.0.0 => k8s.io/legacy-cloud-providers v0.0.0-20190718190548-039b99e58dbd
 	k8s.io/metrics v0.0.0 => k8s.io/metrics v0.0.0-20190718185242-1e1642704fe6
