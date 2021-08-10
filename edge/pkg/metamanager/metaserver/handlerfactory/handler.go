@@ -51,7 +51,7 @@ func (f *Factory) Get() http.Handler {
 	if h, ok := f.handlers["get"]; ok {
 		return h
 	}
-	h := handlers.GetResource(f.storage, f.storage, f.scope)
+	h := handlers.GetResource(f.storage, f.scope)
 	f.handlers["get"] = h
 	return h
 }
