@@ -34,9 +34,19 @@ import (
 	"github.com/kubeedge/kubeedge/edge/pkg/edgehub/config"
 )
 
+func init() {
+	moduleContextType := map[string]string{module.EdgeHubModuleName: common.MsgCtxTypeChannel}
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, moduleContextType, nil)
+	add := &common.ModuleInfo{
+		ModuleName: module.EdgeHubModuleName,
+		ModuleType: common.MsgCtxTypeChannel,
+	}
+	beehiveContext.AddModule(add)
+	beehiveContext.AddModuleGroup(module.EdgeHubModuleName, module.EdgeHubModuleName)
+}
+
 //TestIsSyncResponse() tests whether there exists a channel with the given message_id in the syncKeeper
 func TestIsSyncResponse(t *testing.T) {
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
 	tests := []struct {
 		name  string
 		hub   *EdgeHub
@@ -67,7 +77,6 @@ func TestIsSyncResponse(t *testing.T) {
 
 //TestDispatch() tests whether the messages are properly dispatched to their respective modules
 func TestDispatch(t *testing.T) {
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
 	tests := []struct {
 		name          string
 		hub           *EdgeHub
@@ -109,7 +118,6 @@ func TestDispatch(t *testing.T) {
 
 //TestRouteToEdge() is used to test whether the message received from websocket is dispatched to the required modules
 func TestRouteToEdge(t *testing.T) {
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockAdapter := edgehub.NewMockAdapter(mockCtrl)
@@ -148,7 +156,6 @@ func TestRouteToEdge(t *testing.T) {
 
 //TestSendToCloud() tests whether the send to cloud functionality works properly
 func TestSendToCloud(t *testing.T) {
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockAdapter := edgehub.NewMockAdapter(mockCtrl)
@@ -208,7 +215,6 @@ func TestSendToCloud(t *testing.T) {
 
 //TestRouteToCloud() tests the reception of the message from the beehive framework and forwarding of that message to cloud
 func TestRouteToCloud(t *testing.T) {
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockAdapter := edgehub.NewMockAdapter(mockCtrl)
@@ -230,7 +236,7 @@ func TestRouteToCloud(t *testing.T) {
 			go tt.hub.routeToCloud()
 			time.Sleep(2 * time.Second)
 			core.Register(&EdgeHub{})
-			add := common.ModuleInfo{
+			add := &common.ModuleInfo{
 				ModuleName: module.EdgeHubModuleName,
 				ModuleType: common.MsgCtxTypeChannel,
 			}
@@ -249,7 +255,7 @@ func TestRouteToCloud(t *testing.T) {
 func TestKeepalive(t *testing.T) {
 	CertFile := "/tmp/kubeedge/certs/edge.crt"
 	KeyFile := "/tmp/kubeedge/certs/edge.key"
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockAdapter := edgehub.NewMockAdapter(mockCtrl)

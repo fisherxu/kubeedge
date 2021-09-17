@@ -67,7 +67,7 @@ func TestGroup(t *testing.T) {
 
 // TestStart is function to test Start().
 func TestStart(t *testing.T) {
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
 	//test is for sending test messages from devicetwin module.
 	var test model.Message
 	// ormerMock is mocked Ormer implementation.
@@ -94,14 +94,14 @@ func TestStart(t *testing.T) {
 	fakeModule.EXPECT().Group().Return(TestModule).MaxTimes(5)
 
 	core.Register(fakeModule)
-	add := common.ModuleInfo{
+	add := &common.ModuleInfo{
 		ModuleName: TestModule,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(add)
 	dt := newDeviceTwin(true)
 	core.Register(dt)
-	addDt := common.ModuleInfo{
+	addDt := &common.ModuleInfo{
 		ModuleName: dt.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
 	}

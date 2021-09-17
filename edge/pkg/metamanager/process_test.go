@@ -67,20 +67,20 @@ func TestProcessInsert(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
-	add := common.ModuleInfo{
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(add)
 	beehiveContext.AddModuleGroup(meta.Name(), meta.Group())
-	edgeHub := common.ModuleInfo{
+	edgeHub := &common.ModuleInfo{
 		ModuleName: ModuleNameEdgeHub,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(edgeHub)
 	beehiveContext.AddModuleGroup(ModuleNameEdgeHub, modules.HubGroup)
-	edged := common.ModuleInfo{
+	edged := &common.ModuleInfo{
 		ModuleName: ModuleNameEdged,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
@@ -160,25 +160,25 @@ func TestProcessUpdate(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
-	add := common.ModuleInfo{
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(add)
 	beehiveContext.AddModuleGroup(meta.Name(), meta.Group())
-	edgeHub := common.ModuleInfo{
+	edgeHub := &common.ModuleInfo{
 		ModuleName: ModuleNameEdgeHub,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(edgeHub)
 	beehiveContext.AddModuleGroup(ModuleNameEdgeHub, modules.HubGroup)
-	edgeFunction := common.ModuleInfo{
+	edgeFunction := &common.ModuleInfo{
 		ModuleName: EdgeFunctionModel,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(edgeFunction)
-	edged := common.ModuleInfo{
+	edged := &common.ModuleInfo{
 		ModuleName: ModuleNameEdged,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
@@ -303,25 +303,25 @@ func TestProcessResponse(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
-	add := common.ModuleInfo{
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(add)
 	beehiveContext.AddModuleGroup(meta.Name(), meta.Group())
-	edgeHub := common.ModuleInfo{
+	edgeHub := &common.ModuleInfo{
 		ModuleName: ModuleNameEdgeHub,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(edgeHub)
 	beehiveContext.AddModuleGroup(ModuleNameEdgeHub, modules.HubGroup)
-	edgeFunction := common.ModuleInfo{
+	edgeFunction := &common.ModuleInfo{
 		ModuleName: EdgeFunctionModel,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(edgeFunction)
-	addEdged := common.ModuleInfo{
+	addEdged := &common.ModuleInfo{
 		ModuleName: ModuleNameEdged,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
@@ -388,20 +388,20 @@ func TestProcessDelete(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
-	add := common.ModuleInfo{
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(add)
 	beehiveContext.AddModuleGroup(meta.Name(), meta.Group())
-	edgeHub := common.ModuleInfo{
+	edgeHub := &common.ModuleInfo{
 		ModuleName: ModuleNameEdgeHub,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(edgeHub)
 	beehiveContext.AddModuleGroup(ModuleNameEdgeHub, modules.HubGroup)
-	edged := common.ModuleInfo{
+	edged := &common.ModuleInfo{
 		ModuleName: ModuleNameEdged,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
@@ -453,20 +453,20 @@ func TestProcessQuery(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
-	add := common.ModuleInfo{
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(add)
 	beehiveContext.AddModuleGroup(meta.Name(), meta.Group())
-	edgeHub := common.ModuleInfo{
+	edgeHub := &common.ModuleInfo{
 		ModuleName: ModuleNameEdgeHub,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(edgeHub)
 	beehiveContext.AddModuleGroup(ModuleNameEdgeHub, modules.HubGroup)
-	edged := common.ModuleInfo{
+	edged := &common.ModuleInfo{
 		ModuleName: ModuleNameEdged,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
@@ -599,19 +599,19 @@ func TestProcessNodeConnection(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
-	add := common.ModuleInfo{
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(add)
 	beehiveContext.AddModuleGroup(meta.Name(), meta.Group())
-	edgeHub := common.ModuleInfo{
+	edgeHub := &common.ModuleInfo{
 		ModuleName: ModuleNameEdgeHub,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(edgeHub)
-	edgeFunctionModel := common.ModuleInfo{
+	edgeFunctionModel := &common.ModuleInfo{
 		ModuleName: EdgeFunctionModel,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
@@ -649,14 +649,14 @@ func TestProcessSync(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
-	add := common.ModuleInfo{
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(add)
 	beehiveContext.AddModuleGroup(meta.Name(), meta.Group())
-	edgeHub := common.ModuleInfo{
+	edgeHub := &common.ModuleInfo{
 		ModuleName: ModuleNameEdgeHub,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
@@ -692,20 +692,20 @@ func TestProcessFunctionAction(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
-	add := common.ModuleInfo{
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(add)
 	beehiveContext.AddModuleGroup(meta.Name(), meta.Group())
-	edgeHub := common.ModuleInfo{
+	edgeHub := &common.ModuleInfo{
 		ModuleName: ModuleNameEdgeHub,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(edgeHub)
 	beehiveContext.AddModuleGroup(ModuleNameEdgeHub, modules.HubGroup)
-	edgeFunctionModel := common.ModuleInfo{
+	edgeFunctionModel := &common.ModuleInfo{
 		ModuleName: EdgeFunctionModel,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
@@ -758,14 +758,14 @@ func TestProcessFunctionActionResult(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel})
-	add := common.ModuleInfo{
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
 	}
 	beehiveContext.AddModule(add)
 	beehiveContext.AddModuleGroup(meta.Name(), meta.Group())
-	edgeHub := common.ModuleInfo{
+	edgeHub := &common.ModuleInfo{
 		ModuleName: ModuleNameEdgeHub,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
