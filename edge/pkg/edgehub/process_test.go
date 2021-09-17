@@ -19,6 +19,7 @@ package edgehub
 import (
 	"errors"
 	"fmt"
+	"github.com/kubeedge/beehive/pkg/core"
 	"reflect"
 	"testing"
 	"time"
@@ -26,7 +27,6 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/kubeedge/beehive/pkg/common"
-	"github.com/kubeedge/beehive/pkg/core"
 	beehiveContext "github.com/kubeedge/beehive/pkg/core/context"
 	"github.com/kubeedge/beehive/pkg/core/model"
 	"github.com/kubeedge/kubeedge/edge/mocks/edgehub"
@@ -35,15 +35,20 @@ import (
 )
 
 func init() {
-	moduleContextType := map[string]string{
-		module.EdgeHubModuleName:    common.MsgCtxTypeChannel,
-		module.DeviceTwinModuleName: common.MsgCtxTypeChannel,
-	}
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, moduleContextType, nil)
 	add := &common.ModuleInfo{
 		ModuleName: module.EdgeHubModuleName,
 		ModuleType: common.MsgCtxTypeChannel,
 	}
+
+	moduleContextType := map[string]string{
+		module.EdgeHubModuleName:    common.MsgCtxTypeChannel,
+		module.DeviceTwinModuleName: common.MsgCtxTypeChannel,
+	}
+
+	core.Register(&EdgeHub{})
+
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, moduleContextType, nil)
+
 	beehiveContext.AddModule(add)
 	beehiveContext.AddModuleGroup(module.EdgeHubModuleName, module.EdgeHubModuleName)
 }
@@ -238,7 +243,7 @@ func TestRouteToCloud(t *testing.T) {
 			mockAdapter.EXPECT().Send(gomock.Any()).Return(errors.New("Connection Refused")).AnyTimes()
 			go tt.hub.routeToCloud()
 			time.Sleep(2 * time.Second)
-			core.Register(&EdgeHub{})
+
 			add := &common.ModuleInfo{
 				ModuleName: module.EdgeHubModuleName,
 				ModuleType: common.MsgCtxTypeChannel,
@@ -258,7 +263,7 @@ func TestRouteToCloud(t *testing.T) {
 func TestKeepalive(t *testing.T) {
 	CertFile := "/tmp/kubeedge/certs/edge.crt"
 	KeyFile := "/tmp/kubeedge/certs/edge.key"
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockAdapter := edgehub.NewMockAdapter(mockCtrl)
