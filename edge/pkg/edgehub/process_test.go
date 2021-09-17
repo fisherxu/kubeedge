@@ -35,7 +35,10 @@ import (
 )
 
 func init() {
-	moduleContextType := map[string]string{module.EdgeHubModuleName: common.MsgCtxTypeChannel}
+	moduleContextType := map[string]string{
+		module.EdgeHubModuleName:    common.MsgCtxTypeChannel,
+		module.DeviceTwinModuleName: common.MsgCtxTypeChannel,
+	}
 	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, moduleContextType, nil)
 	add := &common.ModuleInfo{
 		ModuleName: module.EdgeHubModuleName,
