@@ -83,7 +83,7 @@ func Done() <-chan struct{} {
 func AddModule(module *common.ModuleInfo) {
 	moduleContext, err := getModuleContext(module.ModuleName)
 	if err != nil {
-		klog.Fatalf("failed to get module context, err: %v", err)
+		klog.Fatalf("failed to get module context, module name: %s, err: %v", module.ModuleName, err)
 		return
 	}
 
@@ -94,7 +94,7 @@ func AddModule(module *common.ModuleInfo) {
 func AddModuleGroup(module, group string) {
 	moduleContext, err := getModuleContext(module)
 	if err != nil {
-		klog.Errorf("failed to get module context, err: %v", err)
+		klog.Errorf("failed to get module context, module name: %s, err: %v", module, err)
 		return
 	}
 
@@ -110,7 +110,7 @@ func Cancel() {
 func Cleanup(module string) {
 	moduleContext, err := getModuleContext(module)
 	if err != nil {
-		klog.Errorf("failed to get module context, err: %v", err)
+		klog.Errorf("failed to get module context, module name: %s, err: %v", module, err)
 		return
 	}
 
