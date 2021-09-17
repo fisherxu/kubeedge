@@ -57,6 +57,19 @@ var errFailedDBOperation = errors.New(FailedDBOperation)
 func init() {
 	cfg := v1alpha1.NewDefaultEdgeCoreConfig()
 	metaManagerConfig.InitConfigure(cfg.Modules.MetaManager)
+
+	moduleContextType := map[string]string{
+		MetaManagerModuleName: common.MsgCtxTypeChannel,
+		ModuleNameEdgeHub:     common.MsgCtxTypeChannel,
+		ModuleNameEdged:       common.MsgCtxTypeChannel,
+		EdgeFunctionModel:     common.MsgCtxTypeChannel,
+	}
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, moduleContextType, nil)
+	add := &common.ModuleInfo{
+		ModuleName: MetaManagerModuleName,
+		ModuleType: common.MsgCtxTypeChannel,
+	}
+	beehiveContext.AddModule(add)
 }
 
 // TestProcessInsert is function to test processInsert
@@ -67,7 +80,7 @@ func TestProcessInsert(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+
 	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
@@ -160,7 +173,7 @@ func TestProcessUpdate(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+
 	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
@@ -303,7 +316,7 @@ func TestProcessResponse(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+
 	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
@@ -388,7 +401,7 @@ func TestProcessDelete(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+
 	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
@@ -453,7 +466,7 @@ func TestProcessQuery(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+
 	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
@@ -599,7 +612,7 @@ func TestProcessNodeConnection(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+
 	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
@@ -649,7 +662,7 @@ func TestProcessSync(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+
 	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
@@ -692,7 +705,7 @@ func TestProcessFunctionAction(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+
 	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,
@@ -758,7 +771,7 @@ func TestProcessFunctionActionResult(t *testing.T) {
 	dbm.DBAccess = ormerMock
 	meta := newMetaManager(true)
 	core.Register(meta)
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+
 	add := &common.ModuleInfo{
 		ModuleName: meta.Name(),
 		ModuleType: common.MsgCtxTypeChannel,

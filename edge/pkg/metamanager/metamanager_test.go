@@ -30,7 +30,8 @@ import (
 var metaModule core.Module
 
 func init() {
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
+	moduleContextType := map[string]string{MetaManagerModuleName: common.MsgCtxTypeChannel}
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, moduleContextType, nil)
 	add := &common.ModuleInfo{
 		ModuleName: MetaManagerModuleName,
 		ModuleType: common.MsgCtxTypeChannel,

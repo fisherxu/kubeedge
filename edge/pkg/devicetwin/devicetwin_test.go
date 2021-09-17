@@ -23,6 +23,17 @@ const (
 	DeviceTwinModuleName = "twin"
 )
 
+func init() {
+	moduleContextType := map[string]string{TestModule: common.MsgCtxTypeChannel, DeviceTwinModuleName: common.MsgCtxTypeChannel}
+	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, moduleContextType, nil)
+	add := &common.ModuleInfo{
+		ModuleName: TestModule,
+		ModuleType: common.MsgCtxTypeChannel,
+	}
+	beehiveContext.AddModule(add)
+	beehiveContext.AddModuleGroup(TestModule, TestModule)
+}
+
 // TestName is function to test Name().
 func TestName(t *testing.T) {
 	tests := []struct {
@@ -67,7 +78,6 @@ func TestGroup(t *testing.T) {
 
 // TestStart is function to test Start().
 func TestStart(t *testing.T) {
-	beehiveContext.InitContext([]string{common.MsgCtxTypeChannel}, nil, nil)
 	//test is for sending test messages from devicetwin module.
 	var test model.Message
 	// ormerMock is mocked Ormer implementation.
