@@ -34,7 +34,7 @@ func (sctl *SyncController) manageObject(sync *v1alpha1.ObjectSync) {
 
 	//ret, err := informers.GetInformersManager().GetDynamicSharedInformerFactory().ForResource(gvr).Lister().ByNamespace(sync.Namespace).Get(sync.Spec.ObjectName)
 	ret, err := sctl.kubeclient.Resource(gvr).Namespace(sync.Namespace).Get(context.TODO(), sync.Spec.ObjectName, metav1.GetOptions{})
-	if err != nil || ret == nil {
+	if err != nil && !apierrors.IsNotFound(err) || ret == nil {
 		klog.Errorf("failed to get obj(gvr:%v,namespace:%v,name:%v), %v", gvr, sync.Namespace, sync.Spec.ObjectName, err)
 		return
 	}
