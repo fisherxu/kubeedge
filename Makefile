@@ -22,6 +22,8 @@ COMPONENTS=cloud \
 .EXPORT_ALL_VARIABLES:
 OUT_DIR ?= _output/local
 
+RUN = hack/make-rules/build_with_container.sh
+
 define ALL_HELP_INFO
 # Build code.
 #
@@ -46,6 +48,9 @@ endef
 ifeq ($(HELP),y)
 all: clean
 	@echo "$$ALL_HELP_INFO"
+else ifeq ($(BUILD_WITH_CONTAINER),true)
+all:
+	$(RUN) hack/make-rules/build.sh $(WHAT)
 else
 all:
 	KUBEEDGE_OUTPUT_SUBPATH=$(OUT_DIR) hack/make-rules/build.sh $(WHAT)
